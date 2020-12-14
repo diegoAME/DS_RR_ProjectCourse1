@@ -1,0 +1,96 @@
+
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Reproducible Research Course Project 1 (Week 2)
+
+It is now possible to collect a large amount of data about personal movement using activity monitoring devices such as a Fitbit, Nike Fuelband, or Jawbone Up. These type of devices are part of the “quantified self” movement – a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. But these data remain under-utilized both because the raw data are hard to obtain and there is a lack of statistical methods and software for processing and interpreting the data.
+
+This assignment makes use of data from a personal activity monitoring device. This device collects data at 5 minute intervals through out the day. The data consists of two months of data from an anonymous individual collected during the months of October and November, 2012 and include the number of steps taken in 5 minute intervals each day.
+
+## Loading and preprocessing the data
+
+```{r}
+data <- read.csv("activity.csv", header = TRUE)
+```
+## Calculating the total number of steps taken per day
+
+Showing a small part of the dataset in order to illustrate its format.
+
+```{r}
+totalStepsPerDay <- (tapply(data$steps,data$date,sum))
+head(totalStepsPerDay)
+```
+
+## Histogram of the total number of steps taken each day
+
+```{r}
+hist(totalStepsPerDay)
+```
+
+## Calculating and report the mean and median of the total number of steps taken per day
+
+```{r}
+(summary(totalStepsPerDay))
+```
+
+It clearly shows the values of the median and the mean as *10765* and *10766* respectively.
+
+## Making a time series plot of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all days (y-axis)
+
+```{r}
+stepsByInterval <- aggregate(steps~interval,data,mean)
+plot(stepsByInterval$interval, stepsByInterval$steps, type='l',col = "blue", lwd=2,
+     main="Average steps over all days", xlab="Interval", 
+     ylab="Average number of steps")
+```
+
+## Which 5-minute interval, on average across all the days in the dataset, contains the maximum number of steps?
+
+```{r}
+stepsByInterval[which.max(stepsByInterval$steps),]
+```
+
+## Calculating and reporting the total number of missing values in the dataset 
+
+```{r}
+sum(is.na(data$steps))
+```
+
+## Replacing the NAs from the dataset with values of the mean of all steps in the dataset
+
+```{r}
+noNAdata <- data
+noNAdata[is.na(noNAdata)] = mean(data$steps,na.rm = TRUE)
+```
+
+## Making a histogram of the total number of steps taken each day with NAs replaced
+```{r}
+totalStepsPerDaynoNA <- (tapply(noNAdata$steps,noNAdata$date,sum))
+hist(totalStepsPerDaynoNA)
+```
+
+## Calculate and report the mean and median total number of steps taken per day with NAs replaced.
+```{r}
+summary(totalStepsPerDaynoNA)
+```
+
+## Create a new factor variable in the dataset with two levels – “weekday” and “weekend” indicating whether a given date is a weekday or weekend day.
+```{r}
+noNAdata['dayType'] <- weekdays(as.Date(noNAdata$date))
+noNAdata$dayType[noNAdata$dayType  %in% c('sábado','domingo') ] <- "weekend"
+noNAdata$dayType[noNAdata$dayType != "weekend"] <- "weekday"
+noNAdata$dayType <- as.factor(noNAdata$dayType)
+```
+
+## Panel plot containing a time series plot  of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all weekday days or weekend days (y-axis). 
+```{r}
+library(ggplot2)
+
+dateTypeData <- aggregate(steps ~ interval + dayType, noNAdata, mean)
+print(qplot(interval, steps, data = dateTypeData,
+      geom=c("line"), xlab = "Interval", ylab = "Number of steps", main = "") +facet_wrap(~ dayType, ncol = 1))
+```
